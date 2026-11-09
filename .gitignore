@@ -1,17 +1,2 @@
-node_modules/
-dist/
-client/dist/
-server/src/generated/
-coverage/
-*.log
-
-# Secrets stay local. .env.example documents the names.
-.env
-.env.*
-!.env.example
-
-# Private build notes for the author, not part of the submission.
+# Private notes for the author, not part of the submission.
 README-PERSONAL.md
-
-.DS_Store
-Thumbs.db

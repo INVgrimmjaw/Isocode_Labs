@@ -1,4 +1,4 @@
-# Local Postgres only. Bound to loopback with trust auth so there is no password to manage or leak.
+# Runs the whole app. Postgres is bound to loopback with trust auth, so there is no password to manage or leak.
 services:
   db:
     image: postgres:18-alpine
@@ -10,12 +10,29 @@ services:
       - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql
-      - ./scripts/create-test-db.sql:/docker-entrypoint-initdb.d/create-test-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U peti -d peti"]
       interval: 2s
       timeout: 3s
       retries: 20
+
+  backend:
+    build: ./Backend
+    env_file: ./Backend/.env
+    environment:
+      DATABASE_URL: postgresql://peti@db:5432/peti
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./Frontend
+    environment:
+      BACKEND_URL: http://backend:4000
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
