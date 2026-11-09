@@ -13,7 +13,7 @@ const env = z
     DATABASE_URL: z.string().optional(),
     TEST_DATABASE_URL: z.string().optional(),
     OTP_SECRET: z.string().optional(),
-    ANTHROPIC_API_KEY: z.string().optional(),
+    GROQ_API_KEY: z.string().optional(),
     AI_MODEL: z.string().optional(),
     DEMO_MODE: z.string().optional(),
   })
@@ -33,7 +33,7 @@ export const config = {
   // Tests only ever touch TEST_DATABASE_URL, so running them cannot wipe a development database.
   databaseUrl: isTest ? (env.TEST_DATABASE_URL ?? '') : required('DATABASE_URL', env.DATABASE_URL),
   otpSecret: isTest ? 'test-only-secret-not-used-anywhere-else' : required('OTP_SECRET', env.OTP_SECRET),
-  anthropicApiKey: env.ANTHROPIC_API_KEY || undefined,
-  aiModel: env.AI_MODEL || 'claude-opus-5-5',
+  groqApiKey: env.GROQ_API_KEY || undefined,
+  aiModel: env.AI_MODEL || 'openai/gpt-oss-120b',
   demoMode: env.DEMO_MODE === 'true',
 };

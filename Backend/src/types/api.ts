@@ -97,7 +97,7 @@ export interface OrderDetail extends OrderSummary {
 
 export type CaptureUnit = 'CASE' | 'PIECE' | 'UNCLEAR';
 export type CaptureStatus = 'NEEDS_REVIEW' | 'CONFIRMED' | 'REJECTED';
-export type CaptureEngine = 'CLAUDE' | 'MATCHER';
+export type CaptureEngine = 'AI' | 'MATCHER';
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW';
 export type CaptureReason = 'ALIAS' | 'HISTORY' | 'MATCH' | 'UNSURE';
 

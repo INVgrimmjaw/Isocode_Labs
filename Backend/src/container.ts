@@ -1,4 +1,4 @@
-import { defaultClaudeClient } from './ai/claude.ts';
+import { defaultGroqClient } from './ai/groq.ts';
 import { createMessageReader } from './ai/message-reader.ts';
 import { AuthController } from './controllers/auth.controller.ts';
 import { DeskController } from './controllers/desk.controller.ts';
@@ -23,7 +23,7 @@ const captureService = new CaptureService(
   catalogueService,
   creditService,
   orderService,
-  createMessageReader(defaultClaudeClient()),
+  createMessageReader(defaultGroqClient()),
 );
 const tallyService = new TallyService(prisma);
 const reportService = new ReportService(prisma);

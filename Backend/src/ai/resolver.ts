@@ -4,7 +4,7 @@ import { AMBIGUOUS_UNIT_WORDS } from './lexicon.ts';
 import { rankSkus, sizeLeftOpen, type MatchContext, type RankedSku } from './matcher.ts';
 import { messageStatesUnit, normaliseText, type ParsedItem } from './parser.ts';
 
-/** One line as Claude read it, after its SKU codes have been checked against the catalogue. */
+/** One line as the model read it, after its SKU codes have been checked against the catalogue. */
 export interface ModelLine {
   originalWords: string;
   quantity: number | null;
@@ -51,7 +51,7 @@ interface Choice {
 }
 
 /**
- * Claude alone cannot make a line HIGH. It needs the matcher, which reads the same words a
+ * The model alone cannot make a line HIGH. It needs the matcher, which reads the same words a
  * different way, to agree. Model self-reported confidence is not calibrated enough to trust solo.
  */
 function chooseSku(item: ParsedItem, ranked: RankedSku[], ctx: MatchContext, model?: ModelLine): Choice {

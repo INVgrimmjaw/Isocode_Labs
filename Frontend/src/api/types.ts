@@ -142,7 +142,7 @@ export interface CaptureSummary {
 
 export interface CaptureDetail extends CaptureSummary {
   status: 'NEEDS_REVIEW' | 'CONFIRMED' | 'REJECTED';
-  engine: 'CLAUDE' | 'MATCHER';
+  engine: 'AI' | 'MATCHER';
   engineNote: string | null;
   lines: CaptureLineView[];
   catalogue: Catalogue;

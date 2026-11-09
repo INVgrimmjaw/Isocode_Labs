@@ -1,5 +1,5 @@
 import type { CaptureEngine } from '../types/api.ts';
-import { readWithClaude, type ClaudeClient } from './claude.ts';
+import { readWithGroq, type GroqClient } from './groq.ts';
 import type { MatchContext } from './matcher.ts';
 import { parseMessage, parseOriginalWords } from './parser.ts';
 import { resolveLine, type ResolvedLine } from './resolver.ts';
@@ -24,15 +24,15 @@ function readWithMatcher(text: string, ctx: MatchContext, engineNote: string): M
 }
 
 /** Always returns a reading. An AI outage slows the desk down, but must never stop orders. */
-export function createMessageReader(client: ClaudeClient | null): MessageReader {
+export function createMessageReader(client: GroqClient | null): MessageReader {
   return async (text, ctx) => {
     if (!client) return readWithMatcher(text, ctx, NOTE_NO_KEY);
 
     try {
-      const modelLines = await readWithClaude(client, text, ctx);
+      const modelLines = await readWithGroq(client, text, ctx);
       if (modelLines.length === 0) return readWithMatcher(text, ctx, NOTE_FAILED);
       return {
-        engine: 'CLAUDE',
+        engine: 'AI',
         engineNote: null,
         lines: modelLines.map((line) =>
           resolveLine(parseOriginalWords(line.originalWords, ctx.knownSizes), text, ctx, line),
@@ -40,7 +40,7 @@ export function createMessageReader(client: ClaudeClient | null): MessageReader 
       };
     } catch (err) {
       // The message text stays out of the logs: it is customer data.
-      console.warn('Claude could not read a capture:', err instanceof Error ? err.name : 'unknown error');
+      console.warn('Groq could not read a capture:', err instanceof Error ? err.name : 'unknown error');
       return readWithMatcher(text, ctx, NOTE_FAILED);
     }
   };

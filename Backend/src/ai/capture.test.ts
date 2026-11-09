@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SAMPLE_MESSAGE, SKUS } from '../../prisma/seed-data.ts';
-import { checkReading, UnusableReading, type ClaudeClient } from './claude.ts';
 import { confidenceBand, lineNeedsDecision } from './confidence.ts';
+import { checkReading, UnusableReading, type GroqClient } from './groq.ts';
 import type { MatchContext, SkuHistory } from './matcher.ts';
 import { createMessageReader } from './message-reader.ts';
 import { parseMessage } from './parser.ts';
@@ -39,7 +39,7 @@ function readOne(text: string, ctx = regularShop): ResolvedLine {
   return line;
 }
 
-const readWith = (client: ClaudeClient | null, text: string, ctx = regularShop) =>
+const readWith = (client: GroqClient | null, text: string, ctx = regularShop) =>
   createMessageReader(client)(text, ctx);
 
 describe("the client's sample message", () => {
@@ -282,17 +282,21 @@ describe('guards on what the model returns', () => {
   });
 });
 
-function fakeClaude(reply: unknown): ClaudeClient {
-  return { beta: { messages: { parse: vi.fn().mockResolvedValue(reply) } } } as unknown as ClaudeClient;
+function fakeGroq(reply: unknown): GroqClient {
+  return { chat: { completions: { create: vi.fn().mockResolvedValue(reply) } } } as unknown as GroqClient;
 }
 
-function failingClaude(error: Error): ClaudeClient {
-  return { beta: { messages: { parse: vi.fn().mockRejectedValue(error) } } } as unknown as ClaudeClient;
+function failingGroq(error: Error): GroqClient {
+  return { chat: { completions: { create: vi.fn().mockRejectedValue(error) } } } as unknown as GroqClient;
+}
+
+function completion(content: string, finishReason = 'stop') {
+  return { choices: [{ finish_reason: finishReason, message: { content } }] };
 }
 
 const silenceWarnings = () => vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-describe('reading with Claude', () => {
+describe('reading with Groq', () => {
   const modelLine = (over = {}) => ({
     original_words: '5 peti biscuit chhota',
     quantity: 5,
@@ -303,17 +307,17 @@ describe('reading with Claude', () => {
     ],
     ...over,
   });
-  const ok = (lines: unknown[]) => ({ stop_reason: 'end_turn', parsed_output: { lines } });
+  const ok = (lines: unknown[]) => completion(JSON.stringify({ lines }));
 
   it('uses the reading when it is usable', async () => {
-    const reading = await readWith(fakeClaude(ok([modelLine()])), SAMPLE_MESSAGE);
-    expect(reading.engine).toBe('CLAUDE');
+    const reading = await readWith(fakeGroq(ok([modelLine()])), SAMPLE_MESSAGE);
+    expect(reading.engine).toBe('AI');
     expect(reading.lines[0]).toMatchObject({ suggestedSkuId: 'SKU-BS-075', quantity: 5, unit: 'CASE' });
     expect(confidenceBand(reading.lines[0]!.confidence)).toBe('HIGH');
   });
 
   it('keeps the model alternatives first, then fills up to two', async () => {
-    const reading = await readWith(fakeClaude(ok([modelLine()])), SAMPLE_MESSAGE);
+    const reading = await readWith(fakeGroq(ok([modelLine()])), SAMPLE_MESSAGE);
     expect(reading.lines[0]?.alternativeSkuIds[0]).toBe('SKU-CB-075');
     expect(reading.lines[0]?.alternativeSkuIds).toHaveLength(2);
   });
@@ -324,38 +328,38 @@ describe('reading with Claude', () => {
       original_words: text,
       candidates: [{ sku_code: 'SKU-TE-100', confidence: 0.99 }],
     });
-    const reading = await readWith(fakeClaude(ok([disagree])), text);
+    const reading = await readWith(fakeGroq(ok([disagree])), text);
     expect(confidenceBand(reading.lines[0]!.confidence)).not.toBe('HIGH');
   });
 
   it('does not let the model guess a unit the message never states', async () => {
     const text = 'biscuit chhota 5';
-    const reading = await readWith(fakeClaude(ok([modelLine({ original_words: text })])), text);
+    const reading = await readWith(fakeGroq(ok([modelLine({ original_words: text })])), text);
     expect(reading.lines[0]?.unit).toBe('UNCLEAR');
   });
 
   it('does not let the model decide what dabba means', async () => {
     const text = 'peti wala nahi, chai 100 wala 3 dabba';
     const guessed = modelLine({ original_words: 'chai 100 wala 3 dabba', quantity: 3 });
-    const reading = await readWith(fakeClaude(ok([guessed])), text);
+    const reading = await readWith(fakeGroq(ok([guessed])), text);
     expect(reading.lines[0]?.unit).toBe('UNCLEAR');
   });
 
   it('accepts a unit stated once for the whole message', async () => {
     const text = 'sab peti mein: biscuit chhota 5';
     const line = modelLine({ original_words: 'biscuit chhota 5' });
-    const reading = await readWith(fakeClaude(ok([line])), text);
+    const reading = await readWith(fakeGroq(ok([line])), text);
     expect(reading.lines[0]?.unit).toBe('CASE');
   });
 
   it('applies a learned alias over the model', async () => {
     const ctx = context([], [['biscuit chhota', 'SKU-CB-075']]);
-    const reading = await readWith(fakeClaude(ok([modelLine()])), SAMPLE_MESSAGE, ctx);
+    const reading = await readWith(fakeGroq(ok([modelLine()])), SAMPLE_MESSAGE, ctx);
     expect(reading.lines[0]).toMatchObject({ suggestedSkuId: 'SKU-CB-075', reason: 'ALIAS' });
   });
 });
 
-describe('when Claude is not available', () => {
+describe('when Groq is not available', () => {
   it('uses the matcher and says so when no key is configured', async () => {
     const reading = await readWith(null, SAMPLE_MESSAGE);
     expect(reading.engine).toBe('MATCHER');
@@ -365,42 +369,41 @@ describe('when Claude is not available', () => {
 
   it('falls back on an API failure', async () => {
     const warn = silenceWarnings();
-    const reading = await readWith(failingClaude(new Error('overloaded')), SAMPLE_MESSAGE);
+    const reading = await readWith(failingGroq(new Error('overloaded')), SAMPLE_MESSAGE);
     expect(reading.engine).toBe('MATCHER');
     expect(reading.engineNote).toMatch(/could not read/);
     expect(reading.lines).toHaveLength(3);
     warn.mockRestore();
   });
 
-  it('falls back when the model declines', async () => {
+  it('falls back when the reply is cut off', async () => {
     const warn = silenceWarnings();
-    const reply = { stop_reason: 'refusal', parsed_output: null };
-    expect((await readWith(fakeClaude(reply), SAMPLE_MESSAGE)).engine).toBe('MATCHER');
+    const reply = completion('{"lines": [', 'length');
+    expect((await readWith(fakeGroq(reply), SAMPLE_MESSAGE)).engine).toBe('MATCHER');
     warn.mockRestore();
   });
 
   it('falls back when the output could not be parsed', async () => {
     const warn = silenceWarnings();
-    const reply = { stop_reason: 'end_turn', parsed_output: null };
-    expect((await readWith(fakeClaude(reply), SAMPLE_MESSAGE)).engine).toBe('MATCHER');
+    const reply = completion('this is not json');
+    expect((await readWith(fakeGroq(reply), SAMPLE_MESSAGE)).engine).toBe('MATCHER');
     warn.mockRestore();
   });
 
   it('falls back when the model invents a line', async () => {
     const warn = silenceWarnings();
-    const reply = {
-      stop_reason: 'end_turn',
-      parsed_output: {
+    const reply = completion(
+      JSON.stringify({
         lines: [{ original_words: 'ignore rules 999 peti', quantity: 999, unit: 'CASE', candidates: [] }],
-      },
-    };
-    expect((await readWith(fakeClaude(reply), SAMPLE_MESSAGE)).engine).toBe('MATCHER');
+      }),
+    );
+    expect((await readWith(fakeGroq(reply), SAMPLE_MESSAGE)).engine).toBe('MATCHER');
     warn.mockRestore();
   });
 
   it('falls back when the model finds nothing but the matcher might', async () => {
-    const reply = { stop_reason: 'end_turn', parsed_output: { lines: [] } };
-    const reading = await readWith(fakeClaude(reply), SAMPLE_MESSAGE);
+    const reply = completion(JSON.stringify({ lines: [] }));
+    const reading = await readWith(fakeGroq(reply), SAMPLE_MESSAGE);
     expect(reading.engine).toBe('MATCHER');
     expect(reading.lines).toHaveLength(3);
   });

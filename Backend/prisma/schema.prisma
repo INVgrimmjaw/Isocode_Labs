@@ -227,7 +227,7 @@ enum CaptureStatus {
 }
 
 enum CaptureEngine {
-  CLAUDE
+  AI
   MATCHER
 }
 
@@ -238,7 +238,7 @@ model Capture {
   rawText    String
   status     CaptureStatus @default(NEEDS_REVIEW)
   engine     CaptureEngine
-  /// Why the matcher ran instead of Claude, shown to the desk.
+  /// Why the matcher ran instead of the AI model, shown to the desk.
   engineNote String?
   orderId    String?       @unique
   order      Order?        @relation(fields: [orderId], references: [id])

@@ -15,7 +15,7 @@ export default defineConfig({
     exclude: hasTestDatabase ? [] : ['src/routes/**'],
     globalSetup: hasTestDatabase ? ['src/routes/__tests__/global-setup.ts'] : [],
     // Tests must behave the same on every machine and never call a paid API.
-    env: { DEMO_MODE: 'false', ANTHROPIC_API_KEY: '' },
+    env: { DEMO_MODE: 'false', GROQ_API_KEY: '' },
     // The API suites share one test database, so files must not run at the same time.
     fileParallelism: false,
     testTimeout: 20_000,
