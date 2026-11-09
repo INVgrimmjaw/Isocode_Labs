@@ -250,12 +250,16 @@ async function applyRealStock() {
 }
 
 async function main() {
+  const onlyIfEmpty = process.argv.includes('--if-empty');
+
   if (config.isProduction && !config.demoMode) {
+    // The deploy command passes --if-empty, and a real deployment must start without demo data.
+    if (onlyIfEmpty) return;
     throw new Error('Refusing to seed: this wipes every table and DEMO_MODE is not on.');
   }
 
   // A host may restart often. Reseeding on every boot would erase what a reviewer just did.
-  if (process.argv.includes('--if-empty') && (await prisma.retailer.count()) > 0) {
+  if (onlyIfEmpty && (await prisma.retailer.count()) > 0) {
     console.log('Demo data already present, leaving it alone.');
     return;
   }

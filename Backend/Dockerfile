@@ -2,6 +2,9 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Prisma's migration engine needs OpenSSL, which the Alpine image leaves out.
+RUN apk add --no-cache openssl
+
 COPY package*.json prisma.config.ts ./
 COPY prisma ./prisma
 RUN npm ci
