@@ -40,6 +40,8 @@ export interface CatalogueSku extends PricingSku {
   packLabel: string;
   packKind: string;
   imageUrl: string | null;
+  /** Words shopkeepers use, so searching "chai" finds tea leaf. */
+  keywords: string[];
 }
 
 export interface Catalogue {
@@ -59,6 +61,8 @@ export interface LastOrder {
 export interface RetailerHome extends Catalogue {
   credit: CreditSummary;
   lastOrder: LastOrder | null;
+  /** What this shop orders most, so it can be shown first. */
+  usualSkuIds: string[];
 }
 
 export type OrderStatus = 'CREDIT_HOLD' | 'READY' | 'EXPORTED' | 'REJECTED';

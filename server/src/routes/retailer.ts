@@ -10,6 +10,8 @@ import { creditSummary } from '../orders/credit.ts';
 import { getRetailerOrder, listRetailerOrders, orderLabel, placeOrder } from '../orders/service.ts';
 import { captureText, confirmCaptureBody, idParam, placeOrderBody } from './schemas.ts';
 
+const USUAL_ITEMS = 8;
+
 export const retailerRouter = Router();
 
 retailerRouter.use(requireRole('RETAILER'));
@@ -17,7 +19,7 @@ retailerRouter.use(requireRole('RETAILER'));
 retailerRouter.get('/home', async (req, res) => {
   const retailerId = currentRetailerId(req);
   const retailer = await prisma.retailer.findUniqueOrThrow({ where: { id: retailerId } });
-  const [catalogue, credit, last] = await Promise.all([
+  const [catalogue, credit, last, usual] = await Promise.all([
     loadCatalogue(prisma, retailerId),
     creditSummary(prisma, retailer),
     prisma.order.findFirst({
@@ -25,10 +27,18 @@ retailerRouter.get('/home', async (req, res) => {
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { lines: true } } },
     }),
+    prisma.orderLine.groupBy({
+      by: ['skuId'],
+      where: { order: { retailerId, status: { not: 'REJECTED' } } },
+      _count: { skuId: true },
+      orderBy: { _count: { skuId: 'desc' } },
+      take: USUAL_ITEMS,
+    }),
   ]);
   const home: RetailerHome = {
     ...catalogue,
     credit,
+    usualSkuIds: usual.map((row) => row.skuId),
     lastOrder: last && {
       id: last.id,
       label: orderLabel(last.number),

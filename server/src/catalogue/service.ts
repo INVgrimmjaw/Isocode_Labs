@@ -53,6 +53,7 @@ export async function loadCatalogue(db: Db, retailerId: string, now = new Date()
         packLabel: sku.packLabel,
         packKind: sku.packKind,
         imageUrl: sku.imageUrl,
+        keywords: sku.keywords,
         unitsPerCase: sku.unitsPerCase,
         unitPricePaise: priceBySku.get(sku.id) ?? sku.dealerPricePaise,
         gstBps: sku.gstBps,
