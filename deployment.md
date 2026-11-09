@@ -2,7 +2,7 @@
 
 **Live app:** _add the URL after deploying, or delete this line_
 
-**Repository:** _add the GitHub URL_
+**Repository:** <https://github.com/INVgrimmjaw/Isocode_Labs>
 
 ## Run it locally
 
