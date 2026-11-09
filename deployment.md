@@ -1,12 +1,10 @@
 # Peti: deployment
 
-**Live app:** _add the URL after deploying, or delete this line_
-
 **Repository:** <https://github.com/INVgrimmjaw/Isocode_Labs>
 
 ## Run it locally
 
-You need Docker. Node 22.12 or newer is only needed for the second option.
+You need Docker. Node 22.12 or newer is only needed for the second option and the tests.
 
 ### Option 1: everything in Docker
 
@@ -16,7 +14,7 @@ You need Docker. Node 22.12 or newer is only needed for the second option.
    cp Backend/.env.example Backend/.env
    ```
 
-2. Set `OTP_SECRET` in `Backend/.env` to any long random string, for example the output of `openssl rand -hex 32`.
+2. Set `OTP_SECRET` in `Backend/.env` to any long random string, for example the output of `openssl rand -hex 32`. Set `GROQ_API_KEY` too, so messages are read by AI.
 
 3. Build and start Postgres, the API and the web server.
 
@@ -41,7 +39,7 @@ You need Docker. Node 22.12 or newer is only needed for the second option.
    ```bash
    cd Backend
    npm install
-   cp .env.example .env     # then set OTP_SECRET
+   cp .env.example .env     # then set OTP_SECRET and GROQ_API_KEY
    npm run setup            # creates the tables and loads the demo data
    npm run dev
    ```
@@ -61,6 +59,7 @@ You need Docker. Node 22.12 or newer is only needed for the second option.
 ```bash
 docker compose exec db createdb -U peti peti_test   # once
 cd Backend
+npm install
 npm test
 ```
 
@@ -69,13 +68,13 @@ API tests need `TEST_DATABASE_URL`, and that database is wiped on every run. Wit
 ### Reset the demo data
 
 ```bash
-cd Backend
-npm run db:seed
+docker compose exec backend npm run db:seed   # option 1
+cd Backend && npm run db:seed                 # option 2
 ```
 
 ## How it is deployed
 
-Three parts, each in its own container:
+It is not hosted on the public internet. It is packaged as three containers, and `docker compose up --build` starts all of them:
 
 | Part | What it is |
 | --- | --- |
@@ -83,11 +82,7 @@ Three parts, each in its own container:
 | `Backend` | Node and Express. On start it applies database migrations, loads demo data if the database is empty, then serves the API |
 | Database | PostgreSQL |
 
-On a single server, `docker compose up -d --build` runs all three. Put HTTPS in front of port 8080.
-
-On a host with separate services, build each folder from its own `Dockerfile`, provide a managed PostgreSQL, and set `BACKEND_URL` on the frontend to the backend's internal address.
-
-Before going live with real shops, set `DEMO_MODE` to `false`, set `NODE_ENV` to `production` so cookies are HTTPS-only, and connect a real SMS gateway in `Backend/src/lib/sms.ts`.
+To host it later, run the same command on a server and put HTTPS in front of port 8080. Before using it with real shops, set `DEMO_MODE` to `false`, set `NODE_ENV` to `production` so cookies are HTTPS-only, and connect a real SMS gateway in `Backend/src/lib/sms.ts`.
 
 ## Environment variables
 
@@ -100,8 +95,8 @@ Names only. Real values are never stored in the repository.
 | `DATABASE_URL` | Yes | Postgres connection string |
 | `OTP_SECRET` | Yes | Signs the stored hashes of sign-in codes |
 | `DEMO_MODE` | No | `true` shows the OTP on the sign-in screen, because SMS is mocked. Never use with real users |
-| `ANTHROPIC_API_KEY` | No | Enables reading messages with Claude. Without it the built-in matcher is used and the desk is told |
-| `AI_MODEL` | No | Overrides the default Claude model |
+| `GROQ_API_KEY` | No | Enables reading messages with AI through Groq. Without it the built-in matcher is used and the desk is told |
+| `AI_MODEL` | No | Overrides the default Groq model |
 | `PORT` | No | Port to listen on. Defaults to 4000 |
 | `NODE_ENV` | No | `production` makes the session cookie HTTPS-only |
 | `TEST_DATABASE_URL` | Tests only | Database used by `npm test`, wiped on every run |
