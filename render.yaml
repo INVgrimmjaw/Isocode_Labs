@@ -1,0 +1,28 @@
+# One-click deployment on Render: a web service and a managed Postgres in Singapore, the closest region to Jabalpur.
+services:
+  - type: web
+    name: peti
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:demo
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: peti-db
+          property: connectionString
+      - key: OTP_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: "true"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: peti-db
+    region: singapore
+    plan: free
