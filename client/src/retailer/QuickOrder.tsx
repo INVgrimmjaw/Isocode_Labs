@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { Link, useLocation } from 'wouter-preact';
+import { Link, Redirect, useLocation } from 'wouter-preact';
 import type { CaptureDetail, ConfirmCaptureBody, ConfirmCaptureResult } from '#shared/api';
 import { CaptureReview } from '../components/CaptureReview.tsx';
 import { BackIcon } from '../components/icons.tsx';
@@ -77,6 +77,11 @@ export function CaptureReviewScreen({ id }: { id: string }) {
     () => api<CaptureDetail>(`/api/retailer/captures/${id}`),
     [id],
   );
+
+  // Reached by the back button after this message was already dealt with.
+  if (data && data.status !== 'NEEDS_REVIEW') {
+    return <Redirect to={data.orderId ? `/orders/${data.orderId}` : '/quick'} replace />;
+  }
 
   return (
     <>

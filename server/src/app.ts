@@ -48,7 +48,11 @@ export function createApp(): Express {
 
   if (existsSync(CLIENT_DIST)) {
     // Hashed filenames never change content, so the phone never has to ask again.
-    app.use('/assets', express.static(path.join(CLIENT_DIST, 'assets'), { immutable: true, maxAge: ONE_YEAR_MS }));
+    // A missing asset must be a 404. The page fallback below would answer it with HTML.
+    app.use(
+      '/assets',
+      express.static(path.join(CLIENT_DIST, 'assets'), { immutable: true, maxAge: ONE_YEAR_MS, fallthrough: false }),
+    );
     app.use(express.static(CLIENT_DIST, { index: false }));
     app.get('/{*path}', (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');

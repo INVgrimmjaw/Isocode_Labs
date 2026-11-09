@@ -220,6 +220,7 @@ function ReviewLine({
             <input
               class="input input-qty"
               inputMode="numeric"
+              maxLength={5}
               value={state.quantity ?? ''}
               onInput={(e) => {
                 const digits = e.currentTarget.value.replace(/\D/g, '');

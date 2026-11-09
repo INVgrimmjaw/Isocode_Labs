@@ -37,6 +37,7 @@ export async function refreshHome(retailerId?: string) {
 /** Rebuilds an order at today's prices and stock, and reports what could not be included. */
 export async function repeatOrder(orderId: string): Promise<{ skipped: string[] }> {
   const order = await api<OrderDetail>(`/api/retailer/orders/${orderId}`);
+  if (!home.get().data) await refreshHome();
   const data = home.get().data;
   const skus = skuMap(data?.skus ?? []);
   const lines: Record<string, { cases: number; pieces: number }> = {};

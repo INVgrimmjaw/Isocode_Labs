@@ -49,12 +49,12 @@ function StockTag({ sku }: { sku: CatalogueSku }) {
 function ProductCard({
   sku,
   scheme,
-  quantity,
+  line,
   onOpen,
 }: {
   sku: CatalogueSku;
   scheme?: Scheme;
-  quantity: number;
+  line?: { cases: number; pieces: number };
   onOpen: () => void;
 }) {
   const t = useT();
@@ -85,12 +85,12 @@ function ProductCard({
           <button type="button" class="btn btn-block" disabled>
             {t('cat.out')}
           </button>
-        ) : quantity > 0 ? (
+        ) : line ? (
           <Stepper
-            value={quantity}
+            value={line.cases}
             max={maxCases}
             label={name}
-            onChange={(next) => setLine(sku.id, next, cart.get()[sku.id]?.pieces ?? 0)}
+            onChange={(next) => setLine(sku.id, next, line.pieces)}
           />
         ) : (
           <button
@@ -345,7 +345,7 @@ export function CatalogueScreen({ shopName }: { shopName: string }) {
                     key={sku.id}
                     sku={sku}
                     scheme={schemeBySku.get(sku.id)}
-                    quantity={lines[sku.id]?.cases ?? 0}
+                    line={lines[sku.id]}
                     onOpen={() => setOpenSkuId(sku.id)}
                   />
                 ))}

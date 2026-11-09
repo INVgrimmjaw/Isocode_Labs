@@ -51,6 +51,11 @@ function CartLine({ line, sku }: { line: PricedLine; sku: CatalogueSku }) {
                 onChange={(next) => setLine(sku.id, next, line.pieces)}
               />
               {line.pieces > 0 && <span class="muted">{t('cart.loose', { count: line.pieces })}</span>}
+              {line.cases === 0 && (
+                <button type="button" class="link" onClick={() => setLine(sku.id, 0, 0)}>
+                  {t('remove')}
+                </button>
+              )}
             </div>
 
             {line.stock === 'SHORT' && (
